@@ -12,7 +12,7 @@ bug-reports: "https://github.com/lexitree-labs/LEDES/issues"
 depends: [
   "dune" {>= "3.18"}
   "ocaml" {>= "4.08.0"}
-  "angstrom"
+  "angstrom" {>= "0.16.0"}
   "cmdliner"
   "ptime"
   "re" {>= "1.7.2"}

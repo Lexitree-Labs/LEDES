@@ -22,7 +22,8 @@
  (depends
   (ocaml
    (>= 4.08.0))
-  angstrom
+  (angstrom
+   (>= 0.16.0))
   cmdliner
   ptime
   (re

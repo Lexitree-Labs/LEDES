@@ -1,0 +1,10 @@
+(include_subdirs unqualified)
+
+(library
+ (name test_ledes)
+ (libraries ledes)
+ (inline_tests
+  (deps
+   (glob_files data/*)))
+ (preprocess
+  (pps ppx_expect)))

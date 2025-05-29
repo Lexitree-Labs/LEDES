@@ -1,0 +1,4 @@
+(library
+ (public_name ledes)
+ (name ledes)
+ (libraries angstrom ptime re))

@@ -1,0 +1,176 @@
+name: CI
+
+permissions:
+  contents: write
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    tags:
+      - '*'
+    branches:    
+      - main
+
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - 4.08.0
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - run: sudo apt update 
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use OCaml Compiler Version ${{ matrix.ocaml-compiler }}
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - run: opam install . --deps-only --with-test
+
+      - run: opam exec -- dune build
+
+      - run: opam exec -- dune runtest
+
+  lint-doc:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - 4.08.0
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - uses: ocaml/setup-ocaml/lint-doc@v3
+
+  lint-fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: 4.08.0
+      - uses: ocaml/setup-ocaml/lint-fmt@v3
+
+  lint-opam:
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        ocaml-compiler:
+          - 4.08.0
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout tree
+        uses: actions/checkout@v4
+      - name: Set-up OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+      - uses: ocaml/setup-ocaml/lint-opam@v3
+
+  release-cli:
+    name: Build & Package CLI Binaries
+    if: startsWith(github.ref, 'refs/tags/')
+    strategy:
+      fail-fast: false
+      matrix:
+        os: 
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+        ocaml-compiler:
+          - 4
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup OCaml
+        uses: ocaml/setup-ocaml@v3
+        with:
+          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+
+      - name: Install dependencies
+        run: opam install . --with-test --deps-only -y
+
+      - name: Build CLI binary
+        shell: bash
+        env:
+          OS_MATRIX: ${{ matrix.os }}
+        run: |
+          opam exec -- dune build --profile release
+          mv _build/default/bin/ledes_cli.exe _build/default/bin/ledes_cli
+          if [ "$OS_MATRIX" == "windows-latest" ]
+            then chmod 777 _build/default/bin/ledes_cli
+            strip _build/default/bin/ledes_cli
+          else
+            sudo strip _build/default/bin/ledes_cli
+          fi
+          mkdir -p dist
+          ext=""
+          if [ "$OS_MATRIX" == "windows-latest" ]; then ext=".exe"; fi
+          if [ "$OS_MATRIX" == "windows-latest" ]
+            then cp _build/default/bin/ledes_cli dist/ledes_cli_windows$ext
+          elif [ "$OS_MATRIX" == "ubuntu-latest" ]
+            then cp _build/default/bin/ledes_cli dist/ledes_cli_linux$ext
+          elif [ "$OS_MATRIX" == "macos-latest" ]
+            then cp _build/default/bin/ledes_cli dist/ledes_cli_macos$ext
+          fi
+
+      - name: Upload artifact for release
+        uses: actions/upload-artifact@v4
+        with:
+          name: ledes_cli-${{ matrix.os }}
+          path: dist/ledes_cli_*
+
+  publish-release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: release-cli
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: ledes_cli-*
+
+      # - name: Publish to GitHub Releases
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     files: |
+      #       ledes_cli-ubuntu-latest
+      #       ledes_cli-macos-latest
+      #       ledes_cli-windows-latest
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

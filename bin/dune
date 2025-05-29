@@ -1,0 +1,4 @@
+(executable
+ (public_name ledes_cli)
+ (name ledes_cli)
+ (libraries cmdliner ledes))

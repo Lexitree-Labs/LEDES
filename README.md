@@ -48,7 +48,9 @@ A CLI app is also included which supports processing a LEDES file or a data stri
 Download the latest release:
 
 Linux: https://github.com/Lexitree-Labs/LEDES/releases/download/0.1.0/ledes_cli_linux
+
 MACOS: https://github.com/Lexitree-Labs/LEDES/releases/download/0.1.0/ledes_cli_macos
+
 WINDOWS: https://github.com/Lexitree-Labs/LEDES/releases/download/0.1.0/ledes_cli_windows.exe
 
 ```

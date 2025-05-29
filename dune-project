@@ -25,7 +25,7 @@
   angstrom
   cmdliner
   ptime
-  (ocaml
+  (re
    (>= 1.7.2))
   (ppx_expect :with-test))
  (tags

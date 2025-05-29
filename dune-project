@@ -25,7 +25,8 @@
   angstrom
   cmdliner
   ptime
-  re
+  (ocaml
+   (>= 1.7.2))
   (ppx_expect :with-test))
  (tags
   (parser legal)))
